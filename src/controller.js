@@ -80,7 +80,6 @@ Controller.IMA_DEFAULTS = {
   adLabel: 'Advertisement',
   adLabelNofN: 'of',
   showControlsForJSAds: true,
-  adWillPlayMuted: false,
 };
 
 /**
@@ -99,11 +98,32 @@ Controller.prototype.initWithSettings = function(options) {
     return;
   }
 
+  this.warnAboutDeprecatedSettings();
+
   // Default showing countdown timer to true.
   this.showCountdown = true;
   if (this.settings.showCountdown === false) {
     this.showCountdown = false;
   }
+};
+
+
+/**
+ * Logs console warnings when deprecated settings are used.
+ */
+Controller.prototype.warnAboutDeprecatedSettings = function() {
+  const deprecatedSettings = [
+    'adWillAutoplay',
+    'adsWillAutoplay',
+    'adWillPlayMuted',
+    'adsWillPlayMuted',
+  ];
+  deprecatedSettings.forEach((setting) => {
+    if (this.settings[setting] !== undefined) {
+      console.warn(
+        'WARNING: videojs.ima setting ' + setting + ' is deprecated');
+    }
+  });
 };
 
 
@@ -642,6 +662,7 @@ Controller.prototype.changeAdTag = function(adTag) {
   this.settings.adTagUrl = adTag;
 };
 
+
 /**
  * Pauses the ad.
  */
@@ -650,12 +671,43 @@ Controller.prototype.pauseAd = function() {
   this.sdkImpl.pauseAds();
 };
 
+
 /**
  * Resumes the ad.
  */
 Controller.prototype.resumeAd = function() {
   this.adUi.onAdsPlaying();
   this.sdkImpl.resumeAds();
+};
+
+
+/**
+ * @return {boolean} true if we expect that ads will autoplay. false otherwise.
+ */
+Controller.prototype.adsWillAutoplay = function() {
+  if (this.settings.adsWillAutoplay !== undefined) {
+    return this.settings.adsWillAutoplay;
+  } else if (this.settings.adWillAutoplay !== undefined) {
+    return this.settings.adWillAutoplay;
+  } else {
+    return !!this.playerWrapper.getPlayerOptions().autoplay;
+  }
+};
+
+
+/**
+ * @return {boolean} true if we expect that ads will autoplay. false otherwise.
+ */
+Controller.prototype.adsWillPlayMuted = function() {
+  if (this.settings.adsWillPlayMuted !== undefined) {
+    return this.settings.adsWillPlayMuted;
+  } else if (this.settings.adWillPlayMuted !== undefined) {
+    return this.settings.adWillPlayMuted;
+  } else if (this.playerWrapper.getPlayerOptions().muted !== undefined) {
+    return this.playerWrapper.getPlayerOptions().muted;
+  } else {
+    return this.playerWrapper.getVolume() == 0;
+  }
 };
 
 
